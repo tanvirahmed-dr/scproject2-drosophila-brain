@@ -1,8 +1,7 @@
 # Sex-Biased Transcriptional Response to Cocaine Exposure in the *Drosophila* Brain: A Single-Cell Reanalysis
 
-**Group 2**
 **Group Leader:** Tanvir Ahmed
-**Team Members:** Mantuka Masnoon Umama, Mahi Kabir Chowdhury, Nahid Hasan, Suriya Akther, Sharfuddin Safin, Tasnim Haque Achal, Mobin Ibne Mokbul, Md. Tariqul Islam, Nowshin Tarannum Adriana
+**Team Members:** Mantuka Masnoon Umama, Sharfuddin Safin, Tasnim Haque Achal, Suriya Akther, Mahi Kabir Chowdhury, Nahid Hasan, Mobin Ibne Mokbul, Md. Tariqul Islam, Nowshin Tarannum Adriana
 **Repository:** https://github.com/tanvirahmed-dr/scproject2-drosophila-brain
 
 ---
