@@ -1,0 +1,11 @@
+
+# Single-cell raw data (never commit — too large)
+data/**/*.mtx.gz
+data/**/*.tsv.gz
+data/**/*.h5
+data/**/*.h5ad
+data/**/*.tar.gz
+*.tar.gz
+*.h5ad
+.ipynb_checkpoints/
+*.bak
