@@ -1,7 +1,9 @@
-# Sex-Biased Transcriptional Response to Cocaine Exposure in the *Drosophila* Brain: A Single-Cell Reanalysis
+# Drosophila Brain Cocaine Response — Single-Cell RNA-seq Reanalysis
 
 **Group Leader:** Tanvir Ahmed
+
 **Team Members:** Mantuka Masnoon Umama, Sharfuddin Safin, Tasnim Haque Achal, Suriya Akther, Mahi Kabir Chowdhury, Nahid Hasan, Mobin Ibne Mokbul, Md. Tariqul Islam, Nowshin Tarannum Adriana
+
 **Repository:** https://github.com/tanvirahmed-dr/scproject2-drosophila-brain
 
 ---
@@ -31,7 +33,7 @@ The goal of this project was to independently reanalyze the same publicly availa
 Cells were filtered per-sample (before merging) using `min_genes=200` and genes using `min_cells=3`, applied independently to each of the 8 samples prior to concatenation to reduce peak memory usage. Mitochondrial content was calculated using the Drosophila-specific `mt:` prefix (distinct from the human `MT-` convention), and cells with >10% mitochondrial reads were excluded. Genes with missing/`NaN` symbols in the 10x reference annotation were removed prior to all downstream steps.
 
 ### 2.3 Normalization and Feature Selection
-Counts were normalized to 10,000 reads per cell and log-transformed (`normalize_total` + `log1p`). The top 2,000 highly variable genes were selected (`batch_key="sample"`) and used for all downstream dimensionality reduction and clustering. **Variance regression (`regress_out`) was omitted** due to memory constraints on the analysis machine (7.2GB RAM); PCA and the k-nearest-neighbor graph were relied upon to absorb residual technical covariates instead.
+Counts were normalized to 10,000 reads per cell and log-transformed (`normalize_total` + `log1p`). The top 2,000 highly variable genes were selected (`batch_key="sample"`) and used for all downstream dimensionality reduction and clustering. **Variance regression (`regress_out`) was omitted** due to memory constraints on the analysis machine (8GB RAM); PCA and the k-nearest-neighbor graph were relied upon to absorb residual technical covariates instead.
 
 ### 2.4 Clustering
 PCA (30 components) followed by neighbor graph construction (`n_neighbors=15`) and UMAP embedding. Leiden clustering was tested at three resolutions (0.8, 1.0, 1.2), yielding 28, 35, and 37 clusters respectively. **Resolution 0.8 (28 clusters) was selected** as the primary result for this report, prioritizing cluster stability and interpretability over exact numerical agreement with the published atlas.
