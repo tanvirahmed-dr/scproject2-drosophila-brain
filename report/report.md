@@ -110,4 +110,4 @@ Our reanalysis recovered a cell-type structure and a directional trend broadly c
 
 **Purpose:** Assistance with Scanpy pipeline structure and code, debugging runtime errors (memory/OOM issues, dependency errors, indexing errors from NaN gene symbols), git/GitHub workflow setup, and drafting this report's structure.
 
-**Scope of use:** All analysis code was reviewed, executed, and validated by the group leader before inclusion. Design decisions (resolution selection, QC thresholds, which steps to omit for memory reasons) were made by the author based on results observed at each step, not automatically generated. No AI assistance was used in preparing peer-review commentary on other groups' work, per program policy.
+**Scope of use:** All analysis code was reviewed, executed, and validated by the group leader before inclusion. Design decisions (resolution selection, QC thresholds, which steps to omit for memory reasons) were made by the author based on results observed at each step, not automatically generated.
