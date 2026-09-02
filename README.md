@@ -2,7 +2,7 @@
 
 **Group 2 — Project 2**
 **Group Leader:** Tanvir Ahmed ([@tanvirahmed-dr](https://github.com/tanvirahmed-dr))
-**Team Members:** Mantuka Masnoon Umama, Mahi Kabir Chowdhury, Nahid Hasan, Suriya Akther, Sharfuddin Safin, Tasnim Haque Achal, Mobin Ibne Mokbul, Md. Tariqul Islam, Nowshin Tarannum Adriana
+**Team Members:** Mantuka Masnoon Umama, Sharfuddin Safin, Tasnim Haque Achal, Suriya Akther, Mahi Kabir Chowdhury, Nahid Hasan, Mobin Ibne Mokbul, Md. Tariqul Islam, Nowshin Tarannum Adriana
 
 ## Abstract
 
@@ -59,7 +59,7 @@ python scripts/01_data_loading_qc.py
 
 ## Methodology Notes
 
-- **`regress_out` was skipped** during normalization due to memory constraints (7.2GB RAM environment); PCA and the neighbor graph were relied upon to absorb residual technical variance instead.
+- **`regress_out` was skipped** during normalization due to memory constraints (8GB RAM environment); PCA and the neighbor graph were relied upon to absorb residual technical variance instead.
 - **Per-sample filtering** (`min_genes=200`, `min_cells=3`) was applied before merging the 8 samples, rather than after, to reduce peak memory usage during concatenation.
 - Genes with missing/`NaN` symbols in the Drosophila 10x reference were removed prior to downstream analysis.
 - Pathway enrichment used the `Allele_LoF_Phenotypes_from_FlyBase_2017` Enrichr library (fly-specific), since human-organism library names are not valid for this organism.
