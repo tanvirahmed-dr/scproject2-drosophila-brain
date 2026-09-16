@@ -1,0 +1,9 @@
+sample,sex,treatment,replicate
+Female_Cocaine_1,Female,Cocaine,1
+Female_Cocaine_2,Female,Cocaine,2
+Female_Sucrose_1,Female,Sucrose,1
+Female_Sucrose_2,Female,Sucrose,2
+Male_Cocaine_1,Male,Cocaine,1
+Male_Cocaine_2,Male,Cocaine,2
+Male_Sucrose_1,Male,Sucrose,1
+Male_Sucrose_2,Male,Sucrose,2

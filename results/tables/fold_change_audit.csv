@@ -1,0 +1,4 @@
+contrast,genes_tested,nonfinite_log2FC,significant_abs_log2FC_ge_1_fdr_lt_0_05
+Female treatment,9557,0,246
+Male treatment,9557,0,109
+Sex×treatment interaction,9557,0,46

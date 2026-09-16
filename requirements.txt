@@ -139,3 +139,5 @@ websocket-client==1.9.2
 widgetsnbextension==4.0.16
 wrapt==2.4.0
 zarr==3.1.6
+scikit-image
+pydeseq2

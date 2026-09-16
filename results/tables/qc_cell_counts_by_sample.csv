@@ -1,0 +1,9 @@
+sample,sex,treatment,replicate,cells_input,cells_after_basic_qc,cells_after_mito_qc,mitochondrial_genes_detected,ribosomal_genes_detected,predicted_doublets,cells_after_doublet_qc,pct_retained_final
+Female_Cocaine_1,Female,Cocaine,1,13072,13072,13072,7,86,0,13072,100.0
+Female_Cocaine_2,Female,Cocaine,2,9367,9362,9315,7,86,1,9314,99.43418383687413
+Female_Sucrose_1,Female,Sucrose,1,9072,9068,9068,4,86,0,9068,99.95590828924162
+Female_Sucrose_2,Female,Sucrose,2,11693,11693,11693,5,86,0,11693,100.0
+Male_Cocaine_1,Male,Cocaine,1,10437,10436,10433,7,86,0,10433,99.96167481076938
+Male_Cocaine_2,Male,Cocaine,2,11124,11124,11124,9,87,0,11124,100.0
+Male_Sucrose_1,Male,Sucrose,1,13193,13192,13191,9,87,0,13191,99.98484044569089
+Male_Sucrose_2,Male,Sucrose,2,11033,11033,11027,8,86,0,11027,99.94561769237741

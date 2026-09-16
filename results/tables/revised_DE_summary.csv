@@ -1,0 +1,4 @@
+analysis,significant_genes_FDR_lt_0.05_abs_log2FC_ge_1
+Female cocaine vs sucrose,246
+Male cocaine vs sucrose,109
+Sex × treatment interaction,46
