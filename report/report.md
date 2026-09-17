@@ -1,102 +1,262 @@
 # Drosophila Brain Cocaine Response — Single-Cell RNA-seq Reanalysis
 
-**Group Leader:** Tanvir Ahmed
-
-**Team Members:** Mantuka Masnoon Umama, Sharfuddin Safin, Tasnim Haque Achal, Suriya Akther, Mahi Kabir Chowdhury, Nahid Hasan, Mobin Ibne Mokbul, Md. Tariqul Islam, Nowshin Tarannum Adriana
-
+**Group Leader:** Tanvir Ahmed  
+**Team Members:** Mantuka Masnoon Umama, Sharfuddin Safin, Tasnim Haque Achal, Suriya Akther, Mahi Kabir Chowdhury, Nahid Hasan, Mobin Ibne Mokbul, Md. Tariqul Islam, Nowshin Tarannum Adriana  
 **Repository:** https://github.com/tanvirahmed-dr/scproject2-drosophila-brain
 
 ---
 
 ## Abstract
 
-Cocaine exposure produces well-documented behavioral and neurochemical changes across species, but whether these responses differ by sex at the level of brain-wide gene expression remains an active question. Bainton et al. addressed this in *Drosophila melanogaster* using single-cell RNA sequencing of whole-brain tissue from male and female flies exposed to cocaine versus a sucrose control (GEO: GSE152495), reporting a male-biased transcriptional response and resolving the brain into approximately 36 transcriptionally distinct cell clusters. In this project, we reanalyzed the same 8-sample dataset using a Scanpy-based pipeline: quality control and per-sample filtering, normalization, highly-variable-gene selection, Leiden clustering, marker-based cell-type annotation, sex-stratified differential expression (cocaine vs. sucrose), and FlyBase phenotype-based pathway enrichment. Our pipeline recovered 28 clusters at the resolution used for final annotation (35–37 at higher resolutions), and identified 50 significant differentially expressed genes in males versus 46 in females (ratio 1.09) following cocaine exposure. This represents a direction consistent with, but a magnitude substantially weaker than, the male-biased response reported in the original study. We discuss methodological factors — including omission of variance regression due to hardware constraints and a lower clustering resolution — that likely contributed to this attenuated signal.
+Cocaine exposure produces behavioral and neurochemical changes across species, while the extent to which transcriptional responses differ between sexes remains an important biological question. Bainton et al. generated single-cell RNA-seq data from whole *Drosophila melanogaster* brains following cocaine or sucrose exposure in male and female flies (GEO: GSE152495), resolving a brain-wide atlas of approximately 36 transcriptionally distinct clusters. We reanalyzed the same 8-sample dataset using a reproducible Scanpy workflow for quality control, normalization, dimensionality reduction, Leiden clustering, marker-based annotation, and sample-level differential expression. The differential-expression analysis was revised to use pseudobulk counts aggregated within biological samples and a full 2×2 sex-by-treatment model, with an explicit sex × treatment interaction contrast.
+
+After QC, the final object contained 88,922 cells and 11,946 genes. Leiden resolution 0.8 produced 29 clusters and was retained as the final clustering resolution after comparison with resolutions 0.5, 1.0, and 1.2. Nine of ten canonical markers were recovered for marker analysis, with `VGlut` unavailable. In the revised pseudobulk analysis, 246 genes were significant for cocaine versus sucrose in females, 109 were significant in males, and 46 met the significance and effect-size thresholds for the sex × treatment interaction. Importantly, the male and female significant-gene counts are descriptive summaries; the interaction contrast is the direct statistical test of whether the treatment response differs between sexes. No FlyBase phenotype-enrichment terms reached adjusted p < 0.05 for either sex.
+
+These results replace the previous cell-level differential-expression results. The revised analysis avoids treating individual cells as independent biological replicates and provides a direct test of sex-dependent treatment response.
 
 ---
 
 ## 1. Introduction
 
-Cocaine acts primarily by blocking dopamine, serotonin, and norepinephrine reuptake, producing acute reward signaling and, with repeated exposure, lasting changes in neuronal gene expression across reward- and motor-associated brain regions. Much of what is known about these transcriptional changes comes from rodent models, but *Drosophila melanogaster* has become a valuable complementary system: its brain contains homologous dopaminergic, serotonergic, and octopaminergic circuits, it shows conserved behavioral sensitization to cocaine, and its smaller, better-annotated genome and short generation time make large-scale single-cell profiling more tractable.
+Cocaine alters monoaminergic signaling and neuronal activity, producing behavioral and molecular changes in nervous tissue. *Drosophila melanogaster* provides a useful model for studying these processes because its nervous system contains conserved neurotransmitter systems and can be profiled at single-cell resolution.
 
-Bainton et al. generated single-cell RNA-seq data from whole *Drosophila* brains across four conditions — male and female flies, each exposed to either cocaine or a sucrose control — and used this to build a cell-type atlas of roughly 36 transcriptionally distinct clusters spanning glia and multiple neurotransmitter-defined neuronal populations. A central finding of that work was that the transcriptional response to cocaine was markedly stronger in males than in females, suggesting sex-specific vulnerability or regulation at the level of gene expression, not just behavior.
+Bainton et al. used single-cell RNA sequencing of whole *Drosophila* brains from male and female flies exposed to cocaine or sucrose control and reported sex- and cell-type-associated transcriptional responses. The dataset used here is GEO GSE152495 and contains eight biological samples: Female_Cocaine (2 replicates), Female_Sucrose (2 replicates), Male_Cocaine (2 replicates), and Male_Sucrose (2 replicates).
 
-The goal of this project was to independently reanalyze the same publicly available dataset (GEO: GSE152495) using an open, reproducible Scanpy-based pipeline, and to evaluate two things: (1) whether we could recover a cell-type atlas comparable in structure to the original ~36-cluster result, and (2) whether we could reproduce the reported male-biased transcriptional response to cocaine when testing each sex separately for differential expression. We also aimed to characterize the biological pathways implicated in the cocaine response for each sex using phenotype-based enrichment analysis.
+The project had two main objectives:
+
+1. Reproduce a biologically interpretable whole-brain single-cell atlas using a Scanpy workflow.
+2. Quantify cocaine-associated transcriptional changes while treating the biological sample, rather than the individual cell, as the inferential unit and directly testing the sex × treatment interaction.
+
+A major revision of the original project workflow was therefore made for differential expression. The earlier cell-level `rank_genes_groups` analysis was replaced by sample-level pseudobulk aggregation and DESeq2-style negative-binomial modelling.
 
 ---
 
 ## 2. Methods
 
 ### 2.1 Dataset
-8 samples (GEO GSE152495): Female_Cocaine (n=2), Female_Sucrose (n=2), Male_Cocaine (n=2), Male_Sucrose (n=2), each a 10x Genomics single-cell RNA-seq run of whole *Drosophila* brain tissue.
+
+The analysis uses 8 samples from GEO GSE152495:
+
+- Female_Cocaine_1
+- Female_Cocaine_2
+- Female_Sucrose_1
+- Female_Sucrose_2
+- Male_Cocaine_1
+- Male_Cocaine_2
+- Male_Sucrose_1
+- Male_Sucrose_2
+
+Each sample is a 10x Genomics single-cell RNA-seq run of whole *Drosophila* brain tissue.
 
 ### 2.2 Quality Control and Filtering
-Cells were filtered per-sample (before merging) using `min_genes=200` and genes using `min_cells=3`, applied independently to each of the 8 samples prior to concatenation to reduce peak memory usage. Mitochondrial content was calculated using the Drosophila-specific `mt:` prefix (distinct from the human `MT-` convention), and cells with >10% mitochondrial reads were excluded. Genes with missing/`NaN` symbols in the 10x reference annotation were removed prior to all downstream steps.
+
+Cells were filtered independently within each sample using `min_genes=200`, and genes were retained using `min_cells=3`, before the eight samples were merged. This order of operations was chosen to reduce peak memory use during concatenation.
+
+Mitochondrial content was calculated using the Drosophila-specific `mt:` gene prefix. Cells with more than 10% mitochondrial reads were excluded. Genes with missing/`NaN` symbols in the 10x feature annotation were removed before downstream analysis.
+
+The resulting final normalized object contained **88,922 cells and 11,946 genes**.
 
 ### 2.3 Normalization and Feature Selection
-Counts were normalized to 10,000 reads per cell and log-transformed (`normalize_total` + `log1p`). The top 2,000 highly variable genes were selected (`batch_key="sample"`) and used for all downstream dimensionality reduction and clustering. **Variance regression (`regress_out`) was omitted** due to memory constraints on the analysis machine (8GB RAM); PCA and the k-nearest-neighbor graph were relied upon to absorb residual technical covariates instead.
 
-### 2.4 Clustering
-PCA (30 components) followed by neighbor graph construction (`n_neighbors=15`) and UMAP embedding. Leiden clustering was tested at three resolutions (0.8, 1.0, 1.2), yielding 28, 35, and 37 clusters respectively. **Resolution 0.8 (28 clusters) was selected** as the primary result for this report, prioritizing cluster stability and interpretability over exact numerical agreement with the published atlas.
+Counts were normalized to 10,000 total counts per cell and log-transformed using `normalize_total` followed by `log1p`. The top 2,000 highly variable genes were selected with sample-aware HVG selection and were used for scaling, PCA, and neighborhood construction.
+
+Variance regression (`regress_out`) was omitted because the analysis was performed in an 8GB RAM environment and the operation produced excessive memory demands. This limitation applies primarily to the dimensionality-reduction/clustering workflow. The differential-expression effect sizes were not calculated from the scaled matrix.
+
+### 2.4 Clustering and Resolution Assessment
+
+PCA was performed using 30 components, followed by neighborhood construction with `n_neighbors=15` and UMAP embedding. Leiden clustering was evaluated at four resolutions: 0.5, 0.8, 1.0, and 1.2.
+
+A reproducible random sample of 5,000 cells was used to calculate silhouette scores in the first 30 PCA dimensions. The resulting comparison was:
+
+| Leiden resolution | Clusters | Silhouette score | Sample size |
+|---:|---:|---:|---:|
+| 0.5 | 21 | 0.083912 | 5,000 |
+| 0.8 | 29 | 0.076869 | 5,000 |
+| 1.0 | 32 | 0.076761 | 5,000 |
+| 1.2 | 34 | 0.078907 | 5,000 |
+
+Resolution **0.8** was retained for the final annotation because it preserved the project's intended balance between cluster granularity and biological interpretability while remaining reasonably comparable with the published atlas. The quantitative assessment is retained in `results/tables/clustering_resolution_comparison.csv`.
 
 ### 2.5 Cell-Type Annotation
-Clusters were annotated using canonical marker genes: `repo` (glia), `ey`/`Fas2` (Kenyon cells), `VAChT` (cholinergic), `Gad1` (GABAergic), `ple` (dopaminergic), `SerT` (serotonergic), `Tdc2` (octopaminergic). Two additional canonical markers, `elav` (pan-neuronal) and `VGlut` (glutamatergic), were not present within the top 2,000 highly variable genes and were excluded from this analysis — a limitation discussed in Section 5.
 
-### 2.6 Differential Expression
-Within each sex, cocaine-exposed cells were compared against sucrose-exposed cells (Wilcoxon rank-sum test, Scanpy `rank_genes_groups`). Genes with |log2 fold-change| > 1 and Benjamini-Hochberg adjusted p < 0.05 were considered significant.
+Canonical marker genes were examined using a marker-specific representation of the full expression matrix. The marker panel was:
 
-### 2.7 Pathway Enrichment
-The top 150 significant DE genes per sex were tested against the `Allele_LoF_Phenotypes_from_FlyBase_2017` gene set library via Enrichr (GSEApy), using the fly-specific organism setting.
+- `repo` — glial marker
+- `elav` — pan-neuronal marker
+- `ey` and `Fas2` — Kenyon-cell-associated markers
+- `VAChT` — cholinergic marker
+- `Gad1` — GABAergic marker
+- `VGlut` — glutamatergic marker
+- `ple` — dopaminergic marker
+- `SerT` — serotonergic marker
+- `Tdc2` — octopaminergic marker
+
+Nine markers were available: `repo`, `elav`, `ey`, `Fas2`, `VAChT`, `Gad1`, `ple`, `SerT`, and `Tdc2`. `VGlut` was not found. Marker expression was visualized in the final dot plot, and cluster-level mean marker expression was saved as `cluster_marker_mean_expression.csv`.
+
+The annotation was deliberately conservative: the notebook retains unresolved cluster labels unless a cluster is assigned a biological label based on the marker inspection.
+
+### 2.6 Sample-Level Pseudobulk Differential Expression
+
+The differential-expression workflow was revised to avoid treating cells from the same biological sample as independent replicates. Raw counts were aggregated across cells within each biological sample to create a sample-by-gene pseudobulk count matrix.
+
+The analysis retained **9,557 genes** after the minimal count filter. Unlike the clustering workflow, DE was therefore performed using the retained genes rather than restricting the analysis to the 2,000 HVGs.
+
+A full 2×2 model was fitted using PyDESeq2 with the design:
+
+`~ sex + treatment + sex:treatment`
+
+with Female and Sucrose as the reference levels. The model contains:
+
+- an intercept;
+- a male main-effect coefficient;
+- a cocaine treatment coefficient at the female reference level;
+- a male × cocaine interaction coefficient.
+
+Three contrasts were extracted:
+
+1. **Female cocaine vs sucrose:** treatment effect at the female reference level.
+2. **Male cocaine vs sucrose:** treatment effect in males, represented by the treatment coefficient plus the interaction coefficient.
+3. **Sex × treatment interaction:** direct test of whether the cocaine treatment effect differs between males and females.
+
+A gene was counted as significant when **Benjamini–Hochberg adjusted p < 0.05 and |log2FC| ≥ 1**.
+
+### 2.7 Fold-Change Integrity Audit
+
+The final fold-change audit evaluated all three contrasts. All 9,557 tested genes had finite log2 fold-change values in each contrast. No non-finite log2FC values were included in the significant-DE sets.
+
+### 2.8 Pathway Enrichment
+
+Significant DE genes from the female and male treatment contrasts were tested separately using GSEApy/Enrichr against the fly-specific `Allele_LoF_Phenotypes_from_FlyBase_2017` library.
+
+Enrichment results were divided into significant and non-significant terms using adjusted p < 0.05. When no significant terms were present, no enrichment bar plot was generated; the complete results remain available in the CSV output tables.
 
 ---
 
 ## 3. Results
 
 ### 3.1 Quality Control
-**Figure 1** shows per-condition distributions of genes detected, total counts, mitochondrial percentage, and ribosomal percentage across all 8 samples. Distributions of genes-per-cell and total counts were broadly consistent across the four conditions, indicating comparable sequencing depth and cell quality between sexes and treatments. A subset of cells, more pronounced in some samples than others, showed elevated mitochondrial content — these were removed by the 10% mitochondrial threshold applied during filtering, consistent with their being low-quality or dying cells rather than a biologically meaningful population.
 
-![Figure 1](../results/figures/violin_qc_violin.png)
+The final QC/normalized object contained **88,922 cells and 11,946 genes**. Figure 1 summarizes the distributions of detected genes, total counts, mitochondrial percentage, and ribosomal percentage across the experimental samples.
+
+![Figure 1 — QC summary](../results/figures/fig1_qc_summary.png)
 
 ### 3.2 Clustering and Cell-Type Annotation
-Leiden clustering at resolution 0.8 identified 28 transcriptionally distinct clusters (**Figure 2**), somewhat fewer than the ~36 reported by Bainton et al. Marker gene expression (**Figure 3**) confirmed the presence of major expected cell types including glia, Kenyon cells, and multiple neurotransmitter-defined neuronal populations.
 
-![Figure 2](../results/figures/umap_fig2_umap_clusters.png)
-![Figure 3](../results/figures/dotplot__fig3_marker_dotplot.png)
+At the selected Leiden resolution of 0.8, the analysis identified **29 clusters**. The resolution comparison showed 21, 29, 32, and 34 clusters at resolutions 0.5, 0.8, 1.0, and 1.2, respectively.
 
-### 3.3 Differential Expression: Cocaine vs. Sucrose
-Cocaine exposure produced **50 significant DE genes in males** and **46 in females** (male/female ratio = 1.09; **Figure 4**). This is directionally consistent with the male-biased response reported by Bainton et al. — males did show more significant DE genes than females — but the magnitude of the difference is small enough (a 9% excess) that it does not clearly replicate a strong sex bias. We consider this a partial, weak-signal reproduction of the original finding rather than a confirmation of it; possible reasons for the attenuated effect are discussed in Section 4.
+![Figure 2 — UMAP by condition](../results/figures/fig2_umap_condition.png)
 
-![Figure 4](../results/figures/fig4_volcano_male_female.png)
+![Figure 2 — Leiden clustering](../results/figures/fig2_umap_leiden.png)
 
-### 3.4 Pathway Enrichment
-FlyBase loss-of-function phenotype enrichment (**Figure 5**) identified several behaviorally and neurologically relevant terms enriched among male cocaine-responsive genes, including "mating defective," "sleep defective," "temperature conditional," and "chemical resistant" phenotypes, driven by genes such as *Ddc* (dopamine/serotonin biosynthesis), *Dh31*, *para* (voltage-gated sodium channel), *Dif*, and *Gabat*. The presence of *Ddc* and *para* among the top enriched genes is notable given cocaine's known mechanism of action on monoamine signaling and neuronal excitability, and lends some biological plausibility to the male DE gene set despite its modest size.
+The marker analysis recovered nine of the ten canonical markers tested, with `VGlut` unavailable. Marker expression supported the identification of major glial and neuronal populations, while unresolved labels were retained where the available marker evidence was insufficient.
 
-The female gene set produced a qualitatively different enrichment profile, dominated by developmental and structural phenotype terms rather than behavioral ones: photoreceptor terms ("rhabdomere R2–R5," driven by *mbl* and *ninaE*), neuroblast lineage terms ("neuroblast NB6-4," "neuroblast NB7-3," driven by *SoxN* and *nkd*), and gut/tissue primordium terms ("ganglionic branch primordium," "embryonic/larval proventriculus," "embryonic/larval esophagus," driven by *pyd*, *Fas2*, *fkh*, and *Mmp2*). None of these overlap with the behavioral/neurological terms seen in the male set. This divergence suggests that, to the extent our pipeline detected a female cocaine-response signal at all, it reflects a different underlying biological process than the male response rather than a weaker version of the same process — though given the modest gene set sizes involved, we treat this as a descriptive observation rather than a strong claim.
+![Figure 3 — Canonical marker dot plot](../results/figures/fig3_marker_dotplot.png)
 
-![Figure 5](../results/figures/fig5_pathway_enrichment.png)
+![Figure 3 — Cell-type annotation](../results/figures/fig3_umap_cell_types.png)
+
+### 3.3 Differential Expression: Cocaine vs Sucrose
+
+The revised pseudobulk analysis tested 9,557 genes using the sample-level count matrix and the full sex × treatment design.
+
+| Contrast | Significant genes |
+|---|---:|
+| Female cocaine vs sucrose | **246** |
+| Male cocaine vs sucrose | **109** |
+| Sex × treatment interaction | **46** |
+
+Significance required FDR < 0.05 and |log2FC| ≥ 1.
+
+The **246 versus 109** values are treatment-response counts within the two sexes and should be interpreted descriptively. They are not, by themselves, a statistical comparison of male and female responses. The **46 significant interaction genes** are the genes for which the fitted cocaine effect differs between sexes according to the explicit interaction contrast.
+
+![Figure 4 — Female cocaine vs sucrose](../results/figures/fig4_volcano_female.png)
+
+![Figure 4 — Male cocaine vs sucrose](../results/figures/fig4_volcano_male.png)
+
+![Figure 4 — Sex × treatment interaction](../results/figures/fig4_volcano_interaction.png)
+
+### 3.4 Fold-Change Integrity
+
+The fold-change audit found:
+
+| Contrast | Genes tested | Non-finite log2FC | Significant genes |
+|---|---:|---:|---:|
+| Female treatment | 9,557 | 0 | 246 |
+| Male treatment | 9,557 | 0 | 109 |
+| Sex × treatment interaction | 9,557 | 0 | 46 |
+
+This confirms that the final significant-DE sets were not produced by silently retaining undefined fold changes.
+
+### 3.5 Pathway Enrichment
+
+No FlyBase loss-of-function phenotype terms reached adjusted p < 0.05 for either the male or female significant treatment-response gene set.
+
+Therefore, the revised analysis does **not** support reporting the previously described male enrichment terms such as “mating defective” or “sleep defective,” nor the previously described female photoreceptor, neuroblast, or tissue-primordium terms as significant findings from the final pipeline. Those descriptions belong to the earlier analysis and have been removed from the revised interpretation.
+
+The complete enrichment output is retained in:
+
+- `male_pathway_enrichment_all.csv`
+- `male_pathway_enrichment_significant.csv`
+- `male_pathway_enrichment_nonsignificant.csv`
+- `female_pathway_enrichment_all.csv`
+- `female_pathway_enrichment_significant.csv`
+- `female_pathway_enrichment_nonsignificant.csv`
+
+Because the significant tables are empty, no final enrichment figure is included in the revised results.
 
 ---
 
 ## 4. Discussion
 
-Our reanalysis recovered a cell-type structure and a directional trend broadly consistent with Bainton et al., but with meaningfully different magnitudes on both of the two headline metrics we set out to reproduce.
+### 4.1 Clustering
 
-**Cluster count.** At resolution 0.8 we identified 28 clusters, compared to the ~36 reported in the original atlas. Higher resolutions (1.0 and 1.2) brought this to 35 and 37 respectively, both very close matches, but we chose to report resolution 0.8 as our primary result because it produced cleaner, more stable cluster boundaries with clearly distinct marker gene signatures, rather than optimizing purely for numerical agreement with the published figure. The gap at our chosen resolution most likely reflects differences in upstream QC thresholds, the omission of `regress_out`, and possibly differences in how the original authors defined and filtered doublets or low-quality cells — all of which can shift where the Leiden algorithm draws cluster boundaries without necessarily changing the underlying biology.
+The final clustering resolution was 0.8, producing 29 clusters. The published atlas contains approximately 36 clusters, while the present workflow produced 32 and 34 clusters at resolutions 1.0 and 1.2. The resolution comparison demonstrates that cluster number increases with resolution, while the sampled PCA-space silhouette scores remain relatively close across the tested settings.
 
-**Sex-biased differential expression.** Our male/female DE ratio of 1.09 (50 vs. 46 genes) points in the same direction as the original paper's male-biased finding, but the effect is far weaker than what was reported. We do not consider this a successful replication of the magnitude of that finding, only of its direction. A few methodological choices plausibly contributed to this attenuation: omitting `regress_out` may have left residual technical variance in the data that added noise to the DE test in both sexes symmetrically, diluting a true male-specific signal; and using a coarser clustering resolution (28 vs. ~36) means some of our clusters likely merge multiple original cell subtypes together, which can wash out cell-type-specific effects that would only be visible at finer resolution. A finer-resolution reanalysis restricted to specific dopaminergic or reward-circuit clusters, rather than a whole-brain pseudobulk-style comparison by sex, would be a natural next step to test whether the male bias re-emerges at the level of specific circuits.
+The final resolution was retained at 0.8 to balance cluster granularity with interpretability and project comparability rather than selecting a resolution solely because it produces a cluster count close to the published value. Differences in QC, omitted variance regression, preprocessing, and clustering implementation can all affect the exact number of Leiden communities.
 
-**Biological plausibility of enriched pathways.** Despite the weaker-than-expected sex effect in raw DE gene counts, the pathway enrichment results reveal a more informative pattern than the count alone: the male and female gene sets enrich for qualitatively different categories of terms, not simply different genes within the same category. The male set enriches for behavioral and neurological phenotypes (*Ddc*, dopa decarboxylase, central to dopamine/serotonin synthesis; *para*, the primary voltage-gated sodium channel, relevant to neuronal excitability) — both directly plausible given cocaine's mechanism of action on monoamine signaling. The female set instead enriches for developmental/structural phenotypes (photoreceptor genes *mbl* and *ninaE*; neuroblast lineage genes *SoxN* and *nkd*; gut and tissue primordium genes *fkh*, *Mmp2*, *Fas2*), with no overlap with the male behavioral terms. This suggests that our DE ratio of 1.09 may understate the true sex difference in *response type*, even though it does not detect a strong sex difference in response *magnitude*: males and females may be mounting biologically distinct responses to cocaine exposure rather than the same response at different strengths, which a simple significant-gene-count comparison cannot capture. This is a hypothesis-generating observation given the small gene set sizes involved, and would benefit from validation with a larger sample or finer per-cluster analysis.
+### 4.2 Revised Differential-Expression Analysis
+
+The most important methodological revision is the change from cell-level differential expression to sample-level pseudobulk analysis. Individual cells originating from the same biological sample are not independent biological replicates. Aggregating counts within each sample and fitting a negative-binomial model therefore provides an analysis aligned with the experimental replication structure.
+
+The revised analysis identified 246 significant female treatment-response genes, 109 significant male treatment-response genes, and 46 significant sex × treatment interaction genes under the predefined FDR and effect-size thresholds.
+
+The difference between 246 and 109 should not be converted into a claim that the female or male response is statistically stronger on the basis of gene counts alone. The appropriate comparison is the interaction contrast. The 46 interaction genes represent genes for which the estimated cocaine treatment effect differs between the two sexes under the fitted model.
+
+These results replace the previous cell-level result of 50 male and 46 female genes. The earlier values were generated by a different inferential framework and are not directly comparable with the revised pseudobulk counts.
+
+### 4.3 Pathway Enrichment
+
+The final enrichment analysis yielded no FlyBase phenotype terms with adjusted p < 0.05 for either sex. Consequently, biological interpretations based on specific enrichment terms from the previous workflow are not retained in this report.
+
+This null enrichment result should be treated as an analysis outcome rather than evidence that cocaine has no biological effect. Enrichment depends on the size and composition of the input gene set, the reference library, and the statistical threshold. The present result specifically indicates that the tested male and female significant DE sets did not produce adjusted-p-significant terms in the selected FlyBase library under the implemented analysis.
+
+### 4.4 Statistical and Experimental Considerations
+
+There are **two biological replicates per sex × treatment combination** in the dataset. Although pseudobulk modelling correctly uses samples as the inferential units, the small number of biological replicates limits the precision and statistical power of the experiment. The interaction result should therefore be interpreted in the context of this replication structure.
+
+A useful follow-up analysis would be to examine cell-type-specific pseudobulk responses, provided that sufficient cells and appropriate sample-level replication are available within each cell type. Such an analysis could determine whether interaction effects are concentrated in particular neuronal or glial populations.
 
 ---
 
 ## 5. Limitations
 
-- `regress_out` was omitted due to hardware memory constraints, which may leave residual technical variance (total counts, mitochondrial %) unregressed in the final embedding.
-- Two canonical markers (`elav`, `VGlut`) were unavailable within the top 2,000 HVGs used for clustering/annotation, limiting confirmation of pan-neuronal and glutamatergic cluster identities specifically.
-- Cluster resolution (28) did not fully match the published atlas (~36), which may cause under-splitting of closely related cell subtypes.
+1. **Limited biological replication:** There are two biological replicates for each sex × treatment combination, which limits statistical power and precision for sample-level inference.
+2. **No variance regression:** `regress_out` was omitted because of the memory limitations of the analysis environment. Residual technical variation may therefore remain in the dimensionality-reduction workflow.
+3. **Cluster resolution:** The final resolution of 0.8 produced 29 clusters, fewer than the approximately 36 reported in the reference study. Higher tested resolutions produced 32 and 34 clusters but were not selected as the final resolution.
+4. **Marker availability:** `VGlut` was not recovered in the available feature set used for marker analysis, limiting direct glutamatergic-marker confirmation.
+5. **Whole-brain aggregation for DE:** The revised DE analysis is sample-level and whole-brain rather than cell-type-specific. Cell-type-specific effects may therefore be diluted when aggregated across the complete brain.
+6. **Enrichment library:** Pathway analysis was restricted to the selected FlyBase loss-of-function phenotype library; absence of significant enrichment in this library does not exclude enrichment in other biological databases.
 
 ---
 
-## 6. References
+## 6. Conclusion
+
+This reanalysis provides a revised and statistically appropriate sample-level differential-expression workflow for the GSE152495 *Drosophila* brain dataset. The final object contains 88,922 cells and 11,946 genes, with 29 Leiden clusters at resolution 0.8. The revised pseudobulk analysis tests 9,557 genes and identifies 246 female treatment-response genes, 109 male treatment-response genes, and 46 genes with a significant sex × treatment interaction under FDR < 0.05 and |log2FC| ≥ 1.
+
+The principal conclusion is methodological as well as biological: sex-specific treatment effects should be evaluated using the explicit interaction contrast rather than by comparing the number of significant genes between males and females. The final analysis also finds no adjusted-significant FlyBase phenotype-enrichment terms in either sex. These results supersede the earlier cell-level DE and pathway-enrichment findings in this project.
+
+---
+
+## 7. References
 
 1. Bainton, R.J. et al. Single-cell transcriptomic profiling of the *Drosophila* brain reveals sex-specific and cell-type-specific responses to cocaine. GEO: GSE152495.
 2. Wolf, F.A., Angerer, P. & Theis, F.J. SCANPY: large-scale single-cell gene expression data analysis. *Genome Biology* 19, 15 (2018).
@@ -109,6 +269,6 @@ Our reanalysis recovered a cell-type structure and a directional trend broadly c
 
 **Tool used:** Claude (Anthropic), Sonnet 4.6, accessed via claude.ai chat interface.
 
-**Purpose:** Assistance with Scanpy pipeline structure and code, debugging runtime errors (memory/OOM issues, dependency errors, indexing errors from NaN gene symbols), git/GitHub workflow setup, and drafting this report's structure.
+**Purpose:** Assistance with Scanpy pipeline structure and code, debugging runtime errors (memory/OOM issues, dependency errors, and indexing errors from missing gene symbols), git/GitHub workflow setup, and drafting the report structure.
 
-**Scope of use:** All analysis code was reviewed, executed, and validated by the group leader before inclusion. Design decisions (resolution selection, QC thresholds, which steps to omit for memory reasons) were made by the author based on results observed at each step, not automatically generated.
+**Scope of use:** The analysis code was reviewed, executed, and validated by the group leader before inclusion. Design decisions including QC thresholds, clustering resolution, and memory-related omissions were made by the author based on observed analysis outputs.
