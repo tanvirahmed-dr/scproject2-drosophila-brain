@@ -7,7 +7,7 @@
 
 ## Abstract
 
-This project reanalyzes single-cell RNA-sequencing data from Bainton et al. (GEO: GSE152495), profiling the *Drosophila melanogaster* brain following cocaine versus sucrose exposure across both sexes. The dataset contains 8 biological samples: Female/Male × Cocaine/Sucrose × 2 replicates. We reproduce a whole-brain single-cell atlas, annotate major neuronal and glial populations using canonical markers, and test cocaine-responsive transcriptional changes with sample-level pseudobulk differential expression. A full 2×2 sex-by-treatment model is used to test the sex × treatment interaction directly.
+This project reanalyzes single-cell RNA-sequencing data from Baker et al. (GEO: GSE152495), profiling the *Drosophila melanogaster* brain following cocaine versus sucrose exposure across both sexes. The dataset contains 8 biological samples: Female/Male × Cocaine/Sucrose × 2 replicates. We reproduce a whole-brain single-cell atlas, annotate major neuronal and glial populations using canonical markers, and test cocaine-responsive transcriptional changes with sample-level pseudobulk differential expression. A full 2×2 sex-by-treatment model is used to test the sex × treatment interaction directly.
 
 ## Key Findings
 
